@@ -72,6 +72,8 @@ beforeEach(() => {
     const baseArtifacts =
       await getBaseArtifacts(opts.resolvedConfig, driverMock, {gatherMode: 'navigation'});
     baseArtifacts.URL = {
+      requestedUrl: url,
+      mainDocumentUrl: url,
       finalDisplayedUrl: url,
     };
 
@@ -93,11 +95,7 @@ beforeEach(() => {
     await driverMock.disconnect();
 
     const artifacts = await awaitArtifacts(artifactState);
-    const finalArtifacts = await finalizeArtifacts(baseArtifacts, artifacts);
-    finalArtifacts.URL.requestedUrl = url;
-    finalArtifacts.URL.mainDocumentUrl = url;
-    finalArtifacts.URL.finalDisplayedUrl = url;
-    return finalArtifacts;
+    return finalizeArtifacts(baseArtifacts, artifacts);
   });
 });
 
