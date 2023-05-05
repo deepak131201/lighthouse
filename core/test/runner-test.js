@@ -393,36 +393,11 @@ describe('Runner', () => {
     });
   });
 
-  it('rejects when given an invalid trace artifact', async () => {
-    const url = 'https://example.com';
-    const {resolvedConfig} = await initializeConfig('navigation', {
-      passes: [{
-        recordTrace: true,
-        gatherers: [],
-      }],
-    });
-
-    // Arrange for driver to return bad trace.
-    const badTraceDriver = Object.assign({}, driverMock, {
-      endTrace() {
-        return Promise.resolve({
-          traceEvents: 'not an array',
-        });
-      },
-    });
-
-    return runGatherAndAudit({}, {url, resolvedConfig, driverMock: badTraceDriver})
-      .then(_ => {
-        assert.ok(false);
-      }, _ => {
-        assert.ok(true);
-      });
-  });
-
   it('finds correct timings for multiple gather/audit pairs run separately', async () => {
     const {resolvedConfig} = await initializeConfig('navigation', {
-      passes: [{
-        gatherers: ['viewport-dimensions'],
+      artifacts: [{
+        id: 'ViewportDimensions',
+        gatherer: 'viewport-dimensions',
       }],
       audits: [
         'content-width',
@@ -708,8 +683,9 @@ describe('Runner', () => {
   it('rejects when not given audits to run (and not -G)', async () => {
     const url = 'https://example.com';
     const {resolvedConfig} = await initializeConfig('navigation', {
-      passes: [{
-        gatherers: ['viewport-dimensions'],
+      artifacts: [{
+        id: 'ViewportDimensions',
+        gatherer: 'viewport-dimensions',
       }],
     });
 
