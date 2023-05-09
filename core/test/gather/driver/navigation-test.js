@@ -42,6 +42,7 @@ describe('.gotoURL', () => {
 
   it('will track redirects through gotoURL load with warning', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const url = 'http://example.com';
 
@@ -94,6 +95,7 @@ describe('.gotoURL', () => {
 
   it('backfills requestedUrl when using a callback requestor', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const requestor = () => Promise.resolve();
 
@@ -113,6 +115,7 @@ describe('.gotoURL', () => {
 
   it('throws if no navigations found using a callback requestor', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const requestor = () => Promise.resolve();
 
@@ -132,6 +135,7 @@ describe('.gotoURL', () => {
 
   it('does not add warnings when URLs are equal', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const url = 'https://www.example.com';
 
@@ -148,6 +152,7 @@ describe('.gotoURL', () => {
 
   it('waits for Page.frameNavigated', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const url = 'https://www.example.com';
 
@@ -166,6 +171,7 @@ describe('.gotoURL', () => {
 
   it('waits for page load', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const url = 'https://www.example.com';
 
@@ -195,6 +201,7 @@ describe('.gotoURL', () => {
 
   it('waits for page FCP', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const url = 'https://www.example.com';
 
@@ -229,6 +236,7 @@ describe('.gotoURL', () => {
 
   it('throws when asked to wait for FCP without waiting for load', async () => {
     mockDriver.defaultSession.on = mockDriver.defaultSession.once = createMockOnceFn();
+    await driver.networkMonitor.enable();
 
     const url = 'https://www.example.com';
 
