@@ -18,6 +18,7 @@ import {
 } from './mock-commands.js';
 import * as constants from '../../config/constants.js';
 import {fnAny} from '../test-utils.js';
+import {NetworkMonitor} from '../../gather/driver/network-monitor.js';
 
 /** @typedef {import('../../gather/driver.js').Driver} Driver */
 /** @typedef {import('../../gather/driver/execution-context.js')} ExecutionContext */
@@ -140,7 +141,8 @@ function createMockTargetManager(session) {
     on: createMockOnFn(),
     off: fnAny(),
 
-    /** @return {import('../../gather/driver/target-manager.js')} */
+    // TODO(FR-COMPAT): switch to real TargetManager when legacy removed.
+    /** @return {LH.Gatherer.FRTransitionalDriver['targetManager']} */
     asTargetManager() {
       // @ts-expect-error - We'll rely on the tests passing to know this matches.
       return this;
@@ -164,6 +166,7 @@ function createMockDriver() {
     disconnect: fnAny(),
     executionContext: context.asExecutionContext(),
     targetManager: targetManager.asTargetManager(),
+    networkMonitor: new NetworkMonitor(targetManager.asTargetManager()),
 
     /** @return {Driver} */
     asDriver() {

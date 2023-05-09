@@ -17,6 +17,7 @@ import {DevtoolsMessageLog} from '../../gather/gatherers/devtools-log.js';
 import TraceGatherer from '../../gather/gatherers/trace.js';
 import {getBrowserVersion} from '../../gather/driver/environment.js';
 import {enableAsyncStacks} from '../../gather/driver/prepare.js';
+import {NetworkMonitor} from '../../gather/driver/network-monitor.js';
 
 // Controls how long to wait for a response after sending a DevTools protocol command.
 const DEFAULT_PROTOCOL_TIMEOUT = 30000;
@@ -118,6 +119,8 @@ class Driver {
         this._connection.off('protocolevent', callback);
       },
     };
+
+    this.networkMonitor = new NetworkMonitor(this.targetManager);
   }
 
   /** @deprecated - Not available on Fraggle Rock driver. */
