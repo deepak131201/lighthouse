@@ -45,13 +45,7 @@
             "description": "A `<meta name=\"viewport\">` not only optimizes your app for mobile screen sizes, but also prevents [a 300 millisecond delay to user input](https://developer.chrome.com/blog/300ms-tap-delay-gone-away/). [Learn more about using the viewport meta tag](https://developer.chrome.com/docs/lighthouse/pwa/viewport/).",
             "score": 1,
             "scoreDisplayMode": "binary",
-            "warnings": [],
-            "details": {
-              "type": "base",
-              "metricSavings": {
-                "INP": 0
-              }
-            }
+            "warnings": []
           },
           "first-contentful-paint": {
             "id": "first-contentful-paint",
@@ -11775,13 +11769,7 @@
             "description": "A `<meta name=\"viewport\">` not only optimizes your app for mobile screen sizes, but also prevents [a 300 millisecond delay to user input](https://developer.chrome.com/blog/300ms-tap-delay-gone-away/). [Learn more about using the viewport meta tag](https://developer.chrome.com/docs/lighthouse/pwa/viewport/).",
             "score": 1,
             "scoreDisplayMode": "binary",
-            "warnings": [],
-            "details": {
-              "type": "base",
-              "metricSavings": {
-                "INP": 0
-              }
-            }
+            "warnings": []
           },
           "image-aspect-ratio": {
             "id": "image-aspect-ratio",
@@ -16567,13 +16555,7 @@
             "description": "A `<meta name=\"viewport\">` not only optimizes your app for mobile screen sizes, but also prevents [a 300 millisecond delay to user input](https://developer.chrome.com/blog/300ms-tap-delay-gone-away/). [Learn more about using the viewport meta tag](https://developer.chrome.com/docs/lighthouse/pwa/viewport/).",
             "score": 1,
             "scoreDisplayMode": "binary",
-            "warnings": [],
-            "details": {
-              "type": "base",
-              "metricSavings": {
-                "INP": 0
-              }
-            }
+            "warnings": []
           },
           "first-contentful-paint": {
             "id": "first-contentful-paint",

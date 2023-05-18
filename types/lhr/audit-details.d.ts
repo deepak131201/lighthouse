@@ -18,7 +18,6 @@ interface BaseDetails {
 }
 
 type Details =
-  Details.Base |
   Details.CriticalRequestChain |
   Details.DebugData |
   Details.TreemapData |
@@ -51,10 +50,6 @@ declare module Details {
       };
       children?: SimpleCriticalRequestNode;
     }
-  }
-
-  interface Base extends BaseDetails {
-    type: 'base';
   }
 
   interface Filmstrip extends BaseDetails {

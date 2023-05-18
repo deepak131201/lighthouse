@@ -46,27 +46,26 @@ class Viewport extends Audit {
   static async audit(artifacts, context) {
     const viewportMeta = await ViewportMeta.request(artifacts.MetaElements, context);
 
-    /** @type {LH.Audit.Details.Base} */
-    const details = {
-      type: 'base',
-      metricSavings: {INP: 300},
-    };
-
+    let inpSavings = 300;
     if (!viewportMeta.hasViewportTag) {
       return {
         score: 0,
-        details,
         explanation: str_(UIStrings.explanationNoTag),
+        metricSavings: {
+          INP: inpSavings,
+        },
       };
     }
 
     if (viewportMeta.isMobileOptimized) {
-      details.metricSavings = {INP: 0};
+      inpSavings = 0;
     }
 
     return {
       score: Number(viewportMeta.isMobileOptimized),
-      details,
+      metricSavings: {
+        INP: inpSavings,
+      },
       warnings: viewportMeta.parserWarnings,
     };
   }

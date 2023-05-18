@@ -18,7 +18,7 @@ describe('Mobile-friendly: viewport audit', () => {
     }, fakeContext);
     assert.equal(auditResult.score, 0);
     expect(auditResult.explanation).toBeDisplayString('No `<meta name="viewport">` tag found');
-    expect(auditResult.details.metricSavings).toEqual({INP: 300});
+    expect(auditResult.metricSavings).toEqual({INP: 300});
   });
 
   it('fails when HTML contains a non-mobile friendly viewport meta tag', async () => {
@@ -26,7 +26,7 @@ describe('Mobile-friendly: viewport audit', () => {
     const auditResult = await Audit.audit({MetaElements: makeMetaElements(viewport)}, fakeContext);
     assert.equal(auditResult.score, 0);
     assert.equal(auditResult.warnings[0], undefined);
-    expect(auditResult.details.metricSavings).toEqual({INP: 300});
+    expect(auditResult.metricSavings).toEqual({INP: 300});
   });
 
   it('passes when a valid viewport is provided', async () => {
@@ -35,6 +35,6 @@ describe('Mobile-friendly: viewport audit', () => {
       MetaElements: makeMetaElements(viewport),
     }, fakeContext);
     assert.equal(auditResult.score, 1);
-    expect(auditResult.details.metricSavings).toEqual({INP: 0});
+    expect(auditResult.metricSavings).toEqual({INP: 0});
   });
 });
