@@ -18,6 +18,7 @@ describe('Non-composited animations audit', () => {
             nodeLabel: 'div',
             snippet: '<div id="animated-boi">',
           },
+          score: 0.1,
           animations: [
             {failureReasonsMask: 8192, unsupportedProperties: ['height', 'width']},
             {name: 'alpha', failureReasonsMask: 8192, unsupportedProperties: ['color']},
@@ -31,6 +32,7 @@ describe('Non-composited animations audit', () => {
 
     const auditResult = await NonCompositedAnimationsAudit.audit(artifacts);
     expect(auditResult.score).toEqual(0);
+    expect(auditResult.metricSavings).toEqual({CLS: 0.1});
     expect(auditResult.details.headings).toHaveLength(2);
     expect(auditResult.displayValue).toBeDisplayString('1 animated element found');
     expect(auditResult.details.items).toHaveLength(1);
@@ -125,6 +127,7 @@ describe('Non-composited animations audit', () => {
         {
           traceEventType: 'animation',
           nodeId: 4,
+          score: 0.1,
           node: {
             devtoolsNodePath: '1,HTML,1,BODY,1,DIV',
             selector: 'body > div#animated-boi',
@@ -143,6 +146,7 @@ describe('Non-composited animations audit', () => {
 
     const auditResult = await NonCompositedAnimationsAudit.audit(artifacts);
     expect(auditResult.score).toEqual(1);
+    expect(auditResult.metricSavings).toEqual({CLS: 0});
     expect(auditResult.details.items).toHaveLength(0);
   });
 
@@ -152,6 +156,7 @@ describe('Non-composited animations audit', () => {
         {
           traceEventType: 'animation',
           nodeId: 4,
+          score: 0.1,
           node: {
             devtoolsNodePath: '1,HTML,1,BODY,1,DIV',
             selector: 'body > div#animated-boi',
@@ -169,6 +174,7 @@ describe('Non-composited animations audit', () => {
 
     const auditResult = await NonCompositedAnimationsAudit.audit(artifacts);
     expect(auditResult.score).toEqual(1);
+    expect(auditResult.metricSavings).toEqual({CLS: 0});
     expect(auditResult.details.items).toHaveLength(0);
   });
 

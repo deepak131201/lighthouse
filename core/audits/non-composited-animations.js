@@ -119,12 +119,15 @@ class NonCompositedAnimations extends Audit {
    * @return {Promise<LH.Audit.Product>}
    */
   static async audit(artifacts) {
+    let clsSavings = 0;
+
     // COMPAT: This audit requires m86
     const match = artifacts.HostUserAgent.match(/Chrome\/(\d+)/);
     if (!match || Number(match[1]) < 86) {
       return {
         score: 1,
         notApplicable: true,
+        metricSavings: {CLS: clsSavings},
       };
     }
 
@@ -161,6 +164,8 @@ class NonCompositedAnimations extends Audit {
         }
       }
 
+      if (element.score) clsSavings += element.score;
+
       results.push({
         node: Audit.makeNodeItem(element.node),
         subItems: {
@@ -195,6 +200,9 @@ class NonCompositedAnimations extends Audit {
     return {
       score: results.length === 0 ? 1 : 0,
       notApplicable: results.length === 0,
+      metricSavings: {
+        CLS: clsSavings,
+      },
       details,
       displayValue,
     };
