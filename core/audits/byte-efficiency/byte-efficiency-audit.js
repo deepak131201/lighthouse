@@ -11,6 +11,9 @@ import * as i18n from '../../lib/i18n/i18n.js';
 import {NetworkRecords} from '../../computed/network-records.js';
 import {LoadSimulator} from '../../computed/load-simulator.js';
 import {PageDependencyGraph} from '../../computed/page-dependency-graph.js';
+import {LanternLargestContentfulPaint} from '../../computed/metrics/lantern-largest-contentful-paint.js';
+import {ProcessedNavigation} from '../../computed/processed-navigation.js';
+import {LanternFirstContentfulPaint} from '../../computed/metrics/lantern-first-contentful-paint.js';
 
 const str_ = i18n.createIcuMessageFn(import.meta.url, {});
 
@@ -130,34 +133,34 @@ class ByteEfficiencyAudit extends Audit {
       };
     }
 
-    const [result, graph, simulator] = await Promise.all([
+    const [result, graph, simulator, processedNavigation] = await Promise.all([
       this.audit_(artifacts, networkRecords, context),
       // Page dependency graph is only used in navigation mode.
       gatherContext.gatherMode === 'navigation' ?
         PageDependencyGraph.request({trace, devtoolsLog, URL}, context) :
         null,
       LoadSimulator.request(simulatorOptions, context),
+      gatherContext.gatherMode === 'navigation' ?
+        ProcessedNavigation.request(trace, context) :
+        null,
     ]);
 
-    return this.createAuditProduct(result, graph, simulator, gatherContext);
+    return this.createAuditProduct(result, graph, simulator, processedNavigation, gatherContext);
   }
 
   /**
-   * Computes the estimated effect of all the byte savings on the maximum of the following:
-   *
-   * - end time of the last long task in the provided graph
-   * - (if includeLoad is true or not provided) end time of the last node in the graph
+   * Computes the estimated effect of all the byte savings on the provided graph.
    *
    * @param {Array<LH.Audit.ByteEfficiencyItem>} results The array of byte savings results per resource
    * @param {Node} graph
    * @param {Simulator} simulator
-   * @param {{includeLoad?: boolean, label?: string, providedWastedBytesByUrl?: Map<string, number>}=} options
-   * @return {number}
+   * @param {{label?: string, providedWastedBytesByUrl?: Map<string, number>}=} options
+   * @return {{savings: number, simulationBeforeChanges: LH.Gatherer.Simulation.Result, simulationAfterChanges: LH.Gatherer.Simulation.Result}}
    */
-  static computeWasteWithTTIGraph(results, graph, simulator, options) {
-    options = Object.assign({includeLoad: true, label: this.meta.id}, options);
-    const beforeLabel = `${options.label}-before`;
-    const afterLabel = `${options.label}-after`;
+  static computeWasteWithGraph(results, graph, simulator, options) {
+    options = Object.assign({label: ''}, options);
+    const beforeLabel = `${this.meta.id}-${options.label}-before`;
+    const afterLabel = `${this.meta.id}-${options.label}-after`;
 
     const simulationBeforeChanges = simulator.simulate(graph, {label: beforeLabel});
 
@@ -192,7 +195,36 @@ class ByteEfficiencyAudit extends Audit {
       node.record.transferSize = originalTransferSize;
     });
 
-    const savingsOnOverallLoad = simulationBeforeChanges.timeInMs - simulationAfterChanges.timeInMs;
+    const savings = simulationBeforeChanges.timeInMs - simulationAfterChanges.timeInMs;
+
+    return {
+      // Round waste to nearest 10ms
+      savings: Math.round(Math.max(savings, 0) / 10) * 10,
+      simulationBeforeChanges,
+      simulationAfterChanges,
+    };
+  }
+
+  /**
+   * Computes the estimated effect of all the byte savings on the maximum of the following:
+   *
+   * - end time of the last long task in the provided graph
+   * - (if includeLoad is true or not provided) end time of the last node in the graph
+   *
+   * @param {Array<LH.Audit.ByteEfficiencyItem>} results The array of byte savings results per resource
+   * @param {Node} graph
+   * @param {Simulator} simulator
+   * @param {{includeLoad?: boolean, providedWastedBytesByUrl?: Map<string, number>}=} options
+   * @return {number}
+   */
+  static computeWasteWithTTIGraph(results, graph, simulator, options) {
+    options = Object.assign({includeLoad: true}, options);
+    const {savings: savingsOnOverallLoad, simulationBeforeChanges, simulationAfterChanges} =
+      this.computeWasteWithGraph(results, graph, simulator, {
+        ...options,
+        label: 'overallLoad',
+      });
+
     const savingsOnTTI =
       LanternInteractive.getLastLongTaskEndTime(simulationBeforeChanges.nodeTimings) -
       LanternInteractive.getLastLongTaskEndTime(simulationAfterChanges.nodeTimings);
@@ -208,22 +240,48 @@ class ByteEfficiencyAudit extends Audit {
    * @param {ByteEfficiencyProduct} result
    * @param {Node|null} graph
    * @param {Simulator} simulator
+   * @param {LH.Artifacts.ProcessedNavigation|null} processedNavigation
    * @param {LH.Artifacts['GatherContext']} gatherContext
    * @return {LH.Audit.Product}
    */
-  static createAuditProduct(result, graph, simulator, gatherContext) {
+  static createAuditProduct(result, graph, simulator, processedNavigation, gatherContext) {
     const results = result.items.sort((itemA, itemB) => itemB.wastedBytes - itemA.wastedBytes);
 
     const wastedBytes = results.reduce((sum, item) => sum + item.wastedBytes, 0);
+
+    /** @type {LH.Audit.MetricSavings} */
+    const metricSavings = {
+      FCP: 0,
+      LCP: 0,
+    };
 
     // `wastedMs` may be negative, if making the opportunity change could be detrimental.
     // This is useful information in the LHR and should be preserved.
     let wastedMs;
     if (gatherContext.gatherMode === 'navigation') {
       if (!graph) throw Error('Page dependency graph should always be computed in navigation mode');
+      // eslint-disable-next-line max-len
+      if (!processedNavigation) throw new Error('Processed navigation should always be computed in navigation mode');
+
       wastedMs = this.computeWasteWithTTIGraph(results, graph, simulator, {
         providedWastedBytesByUrl: result.wastedBytesByUrl,
       });
+
+      const fcpGraph = LanternFirstContentfulPaint.getPessimisticGraph(graph, processedNavigation);
+      const lcpGraph =
+        LanternLargestContentfulPaint.getPessimisticGraph(graph, processedNavigation);
+
+      const {savings: fcpSavings} = this.computeWasteWithGraph(results, fcpGraph, simulator, {
+        providedWastedBytesByUrl: result.wastedBytesByUrl,
+        label: 'fcp',
+      });
+      const {savings: lcpSavings} = this.computeWasteWithGraph(results, lcpGraph, simulator, {
+        providedWastedBytesByUrl: result.wastedBytesByUrl,
+        label: 'lcp',
+      });
+
+      metricSavings.FCP = fcpSavings;
+      metricSavings.LCP = lcpSavings;
     } else {
       wastedMs = simulator.computeWastedMsFromWastedBytes(wastedBytes);
     }
@@ -237,6 +295,8 @@ class ByteEfficiencyAudit extends Audit {
     const details = Audit.makeOpportunityDetails(result.headings, results,
       {overallSavingsMs: wastedMs, overallSavingsBytes: wastedBytes, sortedBy});
 
+    console.log(this.meta.id, metricSavings);
+
     return {
       explanation: result.explanation,
       warnings: result.warnings,
@@ -245,6 +305,7 @@ class ByteEfficiencyAudit extends Audit {
       numericUnit: 'millisecond',
       score: ByteEfficiencyAudit.scoreForWastedMs(wastedMs),
       details,
+      metricSavings,
     };
   }
 
