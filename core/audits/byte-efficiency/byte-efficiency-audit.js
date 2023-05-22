@@ -149,7 +149,7 @@ class ByteEfficiencyAudit extends Audit {
   }
 
   /**
-   * Computes the estimated effect of all the byte savings on the provided graph.
+   * Computes the estimated effect of all the byte savings on the end time of the last node in the provided graph.
    *
    * @param {Array<LH.Audit.ByteEfficiencyItem>} results The array of byte savings results per resource
    * @param {Node} graph
@@ -294,8 +294,6 @@ class ByteEfficiencyAudit extends Audit {
     const sortedBy = result.sortedBy || ['wastedBytes'];
     const details = Audit.makeOpportunityDetails(result.headings, results,
       {overallSavingsMs: wastedMs, overallSavingsBytes: wastedBytes, sortedBy});
-
-    console.log(this.meta.id, metricSavings);
 
     return {
       explanation: result.explanation,
