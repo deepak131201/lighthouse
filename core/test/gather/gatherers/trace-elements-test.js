@@ -75,7 +75,7 @@ function makeLCPTraceEvent(nodeId) {
   };
 }
 
-describe('Trace Elements gatherer - getLayoutShiftElements', () => {
+describe('Trace Elements gatherer - GetTopLayoutShiftElements', () => {
   /**
    * @param {Array<{nodeId: number, score: number}>} shiftScores
    */
@@ -108,7 +108,7 @@ describe('Trace Elements gatherer - getLayoutShiftElements', () => {
     );
     const processedTrace = await ProcessedTrace.request(trace, {computedCache: new Map()});
 
-    const result = TraceElementsGatherer.getLayoutShiftElements(processedTrace);
+    const result = TraceElementsGatherer.getTopLayoutShiftElements(processedTrace);
     expect(result).toEqual([
       {nodeId: 25, score: 0.6},
       {nodeId: 60, score: 0.4},
@@ -137,7 +137,7 @@ describe('Trace Elements gatherer - getLayoutShiftElements', () => {
     );
     const processedTrace = await ProcessedTrace.request(trace, {computedCache: new Map()});
 
-    const result = TraceElementsGatherer.getLayoutShiftElements(processedTrace);
+    const result = TraceElementsGatherer.getTopLayoutShiftElements(processedTrace);
     expect(result).toEqual([
       {nodeId: 1, score: 1},
       {nodeId: 2, score: 1},
@@ -164,7 +164,7 @@ describe('Trace Elements gatherer - getLayoutShiftElements', () => {
     );
     const processedTrace = await ProcessedTrace.request(trace, {computedCache: new Map()});
 
-    const result = TraceElementsGatherer.getLayoutShiftElements(processedTrace);
+    const result = TraceElementsGatherer.getTopLayoutShiftElements(processedTrace);
     expect(result).toEqual([
       {nodeId: 1, score: 1},
     ]);
@@ -225,7 +225,7 @@ describe('Trace Elements gatherer - getLayoutShiftElements', () => {
     );
     const processedTrace = await ProcessedTrace.request(trace, {computedCache: new Map()});
 
-    const result = TraceElementsGatherer.getLayoutShiftElements(processedTrace);
+    const result = TraceElementsGatherer.getTopLayoutShiftElements(processedTrace);
     expect(result).toEqual([
       {nodeId: 1, score: 1},
       {nodeId: 2, score: 1},
@@ -260,13 +260,72 @@ describe('Trace Elements gatherer - getLayoutShiftElements', () => {
     );
     const processedTrace = await ProcessedTrace.request(trace, {computedCache: new Map()});
 
-    const result = TraceElementsGatherer.getLayoutShiftElements(processedTrace);
+    const result = TraceElementsGatherer.getTopLayoutShiftElements(processedTrace);
     expect(result).toEqual([
       {nodeId: 60, score: 0.7},
       {nodeId: 25, score: 0.6},
     ]);
     const total = sumScores(result);
     expectEqualFloat(total, 1.3);
+  });
+
+  it('returns only the top five values', async () => {
+    const trace = createTestTrace({});
+    trace.traceEvents.push(
+      makeLayoutShiftTraceEvent(1, [
+        {
+          new_rect: [0, 100, 100, 100],
+          node_id: 1,
+          old_rect: [0, 0, 100, 100],
+        },
+        {
+          new_rect: [0, 200, 100, 100],
+          node_id: 2,
+          old_rect: [0, 100, 100, 100],
+        },
+      ]),
+      makeLayoutShiftTraceEvent(1, [
+        {
+          new_rect: [0, 100, 200, 200],
+          node_id: 3,
+          old_rect: [0, 100, 200, 200],
+        },
+      ]),
+      makeLayoutShiftTraceEvent(0.75, [
+        {
+          new_rect: [0, 0, 100, 50],
+          node_id: 4,
+          old_rect: [0, 0, 100, 100],
+        },
+        {
+          new_rect: [0, 0, 100, 50],
+          node_id: 5,
+          old_rect: [0, 0, 100, 100],
+        },
+        {
+          new_rect: [0, 0, 100, 200],
+          node_id: 6,
+          old_rect: [0, 0, 100, 100],
+        },
+        {
+          new_rect: [0, 0, 100, 200],
+          node_id: 7,
+          old_rect: [0, 0, 100, 100],
+        },
+      ])
+    );
+    const processedTrace = await ProcessedTrace.request(trace, {computedCache: new Map()});
+
+    const result = TraceElementsGatherer.getTopLayoutShiftElements(processedTrace);
+    expect(result).toEqual([
+      {nodeId: 3, score: 1.0},
+      {nodeId: 1, score: 0.5},
+      {nodeId: 2, score: 0.5},
+      {nodeId: 6, score: 0.25},
+      {nodeId: 7, score: 0.25},
+    ]);
+    const total = sumScores(result);
+    expectEqualFloat(total, 2.5);
   });
 });
 
@@ -294,9 +353,9 @@ describe('Trace Elements gatherer - Animated Elements', () => {
     gatherer.animationIdToName.set('1', 'alpha');
     gatherer.animationIdToName.set('3', 'beta');
 
-    const result = await gatherer.getAnimatedElements(traceEvents, [{nodeId: 5, score: 0.1}]);
+    const result = await gatherer.getAnimatedElements(traceEvents);
     expect(result).toEqual([
-      {nodeId: 5, score: 0.1, animations: [
+      {nodeId: 5, animations: [
         {name: 'alpha', failureReasonsMask: 8192, unsupportedProperties: ['height']},
         {failureReasonsMask: 8192, unsupportedProperties: ['color']},
       ]},
@@ -323,7 +382,7 @@ describe('Trace Elements gatherer - Animated Elements', () => {
     const gatherer = new TraceElementsGatherer();
     gatherer.animationIdToName.set('1', 'alpha');
 
-    const result = await gatherer.getAnimatedElements(traceEvents, []);
+    const result = await gatherer.getAnimatedElements(traceEvents);
     expect(result).toEqual([
       {nodeId: 5, animations: [
         {name: 'alpha', failureReasonsMask: 2048, unsupportedProperties: []},
@@ -346,7 +405,7 @@ describe('Trace Elements gatherer - Animated Elements', () => {
     gatherer.animationIdToName.set('1', 'alpha');
     gatherer.animationIdToName.set('3', 'beta');
 
-    const result = await gatherer.getAnimatedElements(traceEvents, []);
+    const result = await gatherer.getAnimatedElements(traceEvents);
     expect(result).toEqual([
       {nodeId: 5, animations: [
         {name: 'alpha', failureReasonsMask: 0, unsupportedProperties: []},

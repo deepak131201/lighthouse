@@ -76,7 +76,7 @@ class TraceElements extends FRGatherer {
   }
 
   /**
-   * This function finds the elements that contribute to the CLS score of the page.
+   * This function finds the top (up to 5) elements that contribute to the CLS score of the page.
    * Each layout shift event has a 'score' which is the amount added to the CLS as a result of the given shift(s).
    * We calculate the score per element by taking the 'score' of each layout shift event and
    * distributing it between all the nodes that were shifted, proportianal to the impact region of
@@ -84,7 +84,7 @@ class TraceElements extends FRGatherer {
    * @param {LH.Artifacts.ProcessedTrace} processedTrace
    * @return {Array<TraceElementData>}
    */
-  static getLayoutShiftElements(processedTrace) {
+  static getTopLayoutShiftElements(processedTrace) {
     /** @type {Map<number, number>} */
     const clsPerNode = new Map();
     const shiftEvents = CumulativeLayoutShift.getLayoutShiftEvents(processedTrace);
@@ -122,6 +122,7 @@ class TraceElements extends FRGatherer {
 
     const topFive = [...clsPerNode.entries()]
     .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
     .map(([nodeId, clsContribution]) => {
       return {
         nodeId: nodeId,
@@ -152,10 +153,9 @@ class TraceElements extends FRGatherer {
   /**
    * Find the node ids of elements which are animated using the Animation trace events.
    * @param {Array<LH.TraceEvent>} mainThreadEvents
-   * @param {Array<TraceElementData>} clsNodeData
    * @return {Promise<Array<TraceElementData>>}
    */
-  async getAnimatedElements(mainThreadEvents, clsNodeData) {
+  async getAnimatedElements(mainThreadEvents) {
     /** @type {Map<string, {begin: LH.TraceEvent | undefined, status: LH.TraceEvent | undefined}>} */
     const animationPairs = new Map();
     for (const event of mainThreadEvents) {
@@ -198,11 +198,7 @@ class TraceElements extends FRGatherer {
         const animationName = this.animationIdToName.get(animationId);
         animations.push({name: animationName, failureReasonsMask, unsupportedProperties});
       }
-
-      // If this animated element had layout shifts, we will want to know it's impact.
-      const clsNode = clsNodeData.find(clsNode => clsNode.nodeId === nodeId);
-
-      animatedElementData.push({nodeId, animations, score: clsNode?.score});
+      animatedElementData.push({nodeId, animations});
     }
     return animatedElementData;
   }
@@ -267,15 +263,14 @@ class TraceElements extends FRGatherer {
     const {mainThreadEvents} = processedTrace;
 
     const lcpNodeData = await TraceElements.getLcpElement(trace, context);
-    const clsNodeData = TraceElements.getLayoutShiftElements(processedTrace);
-    const top5ClsNodeData = clsNodeData.slice(0, 5);
-    const animatedElementData = await this.getAnimatedElements(mainThreadEvents, clsNodeData);
+    const clsNodeData = TraceElements.getTopLayoutShiftElements(processedTrace);
+    const animatedElementData = await this.getAnimatedElements(mainThreadEvents);
     const responsivenessElementData = await TraceElements.getResponsivenessElement(trace, context);
 
     /** @type {Map<string, TraceElementData[]>} */
     const backendNodeDataMap = new Map([
       ['largest-contentful-paint', lcpNodeData ? [lcpNodeData] : []],
-      ['layout-shift', top5ClsNodeData],
+      ['layout-shift', clsNodeData],
       ['animation', animatedElementData],
       ['responsiveness', responsivenessElementData ? [responsivenessElementData] : []],
     ]);
