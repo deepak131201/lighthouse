@@ -298,8 +298,6 @@ class ByteEfficiencyAudit extends Audit {
     const details = Audit.makeOpportunityDetails(result.headings, results,
       {overallSavingsMs: wastedMs, overallSavingsBytes: wastedBytes, sortedBy});
 
-    console.log(this.meta.id, metricSavings);
-
     return {
       explanation: result.explanation,
       warnings: result.warnings,
