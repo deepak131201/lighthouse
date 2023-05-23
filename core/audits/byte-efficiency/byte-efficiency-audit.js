@@ -12,7 +12,6 @@ import {NetworkRecords} from '../../computed/network-records.js';
 import {LoadSimulator} from '../../computed/load-simulator.js';
 import {PageDependencyGraph} from '../../computed/page-dependency-graph.js';
 import {LanternLargestContentfulPaint} from '../../computed/metrics/lantern-largest-contentful-paint.js';
-import {ProcessedNavigation} from '../../computed/processed-navigation.js';
 import {LanternFirstContentfulPaint} from '../../computed/metrics/lantern-first-contentful-paint.js';
 
 const str_ = i18n.createIcuMessageFn(import.meta.url, {});
@@ -133,23 +132,30 @@ class ByteEfficiencyAudit extends Audit {
       };
     }
 
-    const [result, graph, simulator, processedNavigation] = await Promise.all([
+    const metricComputationInput = Audit.makeMetricComputationDataInput(artifacts, context);
+
+    const [result, graph, fcpGraph, lcpGraph, simulator] = await Promise.all([
       this.audit_(artifacts, networkRecords, context),
       // Page dependency graph is only used in navigation mode.
       gatherContext.gatherMode === 'navigation' ?
         PageDependencyGraph.request({trace, devtoolsLog, URL}, context) :
         null,
-      LoadSimulator.request(simulatorOptions, context),
       gatherContext.gatherMode === 'navigation' ?
-        ProcessedNavigation.request(trace, context) :
+        // eslint-disable-next-line max-len
+        LanternFirstContentfulPaint.request(metricComputationInput, context).then(r => r.pessimisticGraph) :
         null,
+      gatherContext.gatherMode === 'navigation' ?
+        // eslint-disable-next-line max-len
+        LanternLargestContentfulPaint.request(metricComputationInput, context).then(r => r.pessimisticGraph) :
+        null,
+      LoadSimulator.request(simulatorOptions, context),
     ]);
 
-    return this.createAuditProduct(result, graph, simulator, processedNavigation, gatherContext);
+    return this.createAuditProduct(result, graph, fcpGraph, lcpGraph, simulator, gatherContext);
   }
 
   /**
-   * Computes the estimated effect of all the byte savings on the end time of the last node in the provided graph.
+   * Computes the estimated effect of all the byte savings on the provided graph.
    *
    * @param {Array<LH.Audit.ByteEfficiencyItem>} results The array of byte savings results per resource
    * @param {Node} graph
@@ -239,12 +245,13 @@ class ByteEfficiencyAudit extends Audit {
   /**
    * @param {ByteEfficiencyProduct} result
    * @param {Node|null} graph
+   * @param {Node|null} fcpGraph
+   * @param {Node|null} lcpGraph
    * @param {Simulator} simulator
-   * @param {LH.Artifacts.ProcessedNavigation|null} processedNavigation
    * @param {LH.Artifacts['GatherContext']} gatherContext
    * @return {LH.Audit.Product}
    */
-  static createAuditProduct(result, graph, simulator, processedNavigation, gatherContext) {
+  static createAuditProduct(result, graph, fcpGraph, lcpGraph, simulator, gatherContext) {
     const results = result.items.sort((itemA, itemB) => itemB.wastedBytes - itemA.wastedBytes);
 
     const wastedBytes = results.reduce((sum, item) => sum + item.wastedBytes, 0);
@@ -260,16 +267,12 @@ class ByteEfficiencyAudit extends Audit {
     let wastedMs;
     if (gatherContext.gatherMode === 'navigation') {
       if (!graph) throw Error('Page dependency graph should always be computed in navigation mode');
-      // eslint-disable-next-line max-len
-      if (!processedNavigation) throw new Error('Processed navigation should always be computed in navigation mode');
+      if (!fcpGraph) throw new Error('FCP graph should always be computed in navigation mode');
+      if (!lcpGraph) throw new Error('LCP graph should always be computed in navigation mode');
 
       wastedMs = this.computeWasteWithTTIGraph(results, graph, simulator, {
         providedWastedBytesByUrl: result.wastedBytesByUrl,
       });
-
-      const fcpGraph = LanternFirstContentfulPaint.getPessimisticGraph(graph, processedNavigation);
-      const lcpGraph =
-        LanternLargestContentfulPaint.getPessimisticGraph(graph, processedNavigation);
 
       const {savings: fcpSavings} = this.computeWasteWithGraph(results, fcpGraph, simulator, {
         providedWastedBytesByUrl: result.wastedBytesByUrl,
@@ -294,6 +297,8 @@ class ByteEfficiencyAudit extends Audit {
     const sortedBy = result.sortedBy || ['wastedBytes'];
     const details = Audit.makeOpportunityDetails(result.headings, results,
       {overallSavingsMs: wastedMs, overallSavingsBytes: wastedBytes, sortedBy});
+
+    console.log(this.meta.id, metricSavings);
 
     return {
       explanation: result.explanation,
