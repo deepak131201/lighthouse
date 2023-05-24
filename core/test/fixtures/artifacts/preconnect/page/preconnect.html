@@ -6,10 +6,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- why is dnsStart never -1 :( -->
   <link rel='dns-prefetch' href='https://fonts.gstatic.com' crossorigin />
-  <!-- <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin /> -->
-  <!-- <link href='https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold|PT+Sans:regular,italic,bold|Droid+Sans:400,700|Lato:700,900' rel="stylesheet"> -->
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
   <style>
     div {
       font-family: 'Droid Sans';
@@ -20,12 +18,20 @@
 
 <div>preconnect</div>
 <script>
+  let timeout = 0;
+  if (document.location.search !== '?noframe') {
+    const el = document.createElement('iframe');
+    el.src = '?noframe';
+    document.body.append(el);
+    timeout = 10 * 1000;
+  }
+
   setTimeout(() => {
     const el = document.createElement('link');
     el.href = 'https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold|PT+Sans:regular,italic,bold|Droid+Sans:400,700|Lato:700,900';
     el.rel = 'stylesheet';
     document.head.append(el);
-  }, 1000 * 10);
+  }, timeout);
 </script>
 
 </body>
