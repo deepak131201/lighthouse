@@ -1,0 +1,32 @@
+<!--
+ * Copyright 2020 The Lighthouse Authors. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- why is dnsStart never -1 :( -->
+  <link rel='dns-prefetch' href='https://fonts.gstatic.com' crossorigin />
+  <!-- <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin /> -->
+  <!-- <link href='https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold|PT+Sans:regular,italic,bold|Droid+Sans:400,700|Lato:700,900' rel="stylesheet"> -->
+  <style>
+    div {
+      font-family: 'Droid Sans';
+    }
+  </style>
+</head>
+<body>
+
+<div>preconnect</div>
+<script>
+  setTimeout(() => {
+    const el = document.createElement('link');
+    el.href = 'https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold|PT+Sans:regular,italic,bold|Droid+Sans:400,700|Lato:700,900';
+    el.rel = 'stylesheet';
+    document.head.append(el);
+  }, 1000 * 10);
+</script>
+
+</body>
+</html>
