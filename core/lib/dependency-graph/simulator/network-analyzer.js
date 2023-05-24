@@ -366,14 +366,16 @@ class NetworkAnalyzer {
         }
       }
 
-      collectEstimates(this._estimateRTTViaConnectionTiming);
+      if (!forceCoarseEstimates) {
+        collectEstimates(this._estimateRTTViaConnectionTiming);
+      }
 
       // Connection timing can be missing for a few reasons:
       // - Origin was preconnected, which we don't have instrumentation for.
       // - Trace began recording after a connection has already been established (for example, in timespan mode)
       // - Perhaps Chrome established a connection already in the background (service worker? Just guessing here)
       // - Not provided in LR netstack.
-      if (!originEstimates.length || forceCoarseEstimates) {
+      if (!originEstimates.length) {
         if (useDownloadEstimates) {
           collectEstimates(this._estimateRTTViaDownloadTiming, coarseEstimateMultiplier);
         }
