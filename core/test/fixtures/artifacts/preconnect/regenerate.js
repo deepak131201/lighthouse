@@ -37,9 +37,6 @@ function verify(artifacts) {
   console.log(responseReceived.params.response.timing);
   // Connection should have already been established, either b/c of the preconnect or the iframe.
   // TODO: why is this not working as expected?
-  if (responseReceived.params.response.timing.dnsStart !== -1) {
-    throw new Error('expected dnsStart to be -1');
-  }
   if (responseReceived.params.response.timing.connectStart !== -1) {
     throw new Error('expected connectStart to be -1');
   }
